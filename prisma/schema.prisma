@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ShippingMethod {
+  retiro
+  delivery
+}
+
+enum PaymentMethod {
+  efectivo
+  transferencia
+  mercadopago
+}
+
+enum OrderStatus {
+  PENDIENTE
+  CONFIRMADO
+  EN_PREPARACION
+  LISTO
+  ENVIADO
+  ENTREGADO
+  CANCELADO
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  order    Int       @default(0)
+  active   Boolean   @default(true)
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Extra {
+  id          String         @id @default(cuid())
+  name        String
+  price       Int
+  inStock     Boolean        @default(true)
+  productLink ProductExtra[]
+  itemLink    OrderItemExtra[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id          String         @id @default(cuid())
+  name        String
+  description String
+  price       Int
+  image       String
+  badge       String?
+  inStock     Boolean        @default(true)
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  extras ProductExtra[]
+  orderItems OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProductExtra {
+  productId String
+  extraId   String
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  extra   Extra   @relation(fields: [extraId], references: [id], onDelete: Cascade)
+
+  @@id([productId, extraId])
+}
+
+model Order {
+  id                  String         @id @default(cuid())
+  externalId          String         @unique
+  status              OrderStatus    @default(PENDIENTE)
+  subtotal            Int
+  shippingCost        Int
+  paymentAdjustment   Int
+  total               Int
+  customerName        String
+  customerPhone       String
+  customerEmail       String?
+  shippingMethod      ShippingMethod
+  street              String?
+  number              String?
+  neighborhood        String?
+  paymentMethod       PaymentMethod
+  cashAmount          String?
+  observations        String?
+
+  items     OrderItem[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model OrderItem {
+  id           String   @id @default(cuid())
+  orderId       String
+  productId     String
+  quantity      Int
+  observations  String?
+  unitPrice     Int
+  extrasTotal   Int
+  totalPrice    Int
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  extras  OrderItemExtra[]
+}
+
+model OrderItemExtra {
+  orderItemId String
+  extraId     String
+
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  extra     Extra     @relation(fields: [extraId], references: [id], onDelete: Restrict)
+
+  @@id([orderItemId, extraId])
+}

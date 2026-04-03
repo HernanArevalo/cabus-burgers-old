@@ -18,6 +18,7 @@ import type {
   CheckoutFormData,
 } from "./types"
 import { DELIVERY_COST, paymentMethods } from "./mock-data"
+import { submitOrder } from "@/lib/api"
 
 interface CartContextType {
   items: CartItem[]
@@ -36,7 +37,7 @@ interface CartContextType {
   paymentAdjustmentPercent: number
   total: number
   confirmedOrder: Order | null
-  confirmOrder: (formData: CheckoutFormData) => void
+  confirmOrder: (formData: CheckoutFormData) => Promise<void>
   resetOrder: () => void
 }
 
@@ -106,18 +107,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const total = baseTotal + paymentAdjustmentAmount
 
   const confirmOrder = useCallback(
-    (formData: CheckoutFormData) => {
-      const order: Order = {
-        id: `ORD-${Date.now().toString(36).toUpperCase()}`,
-        items: [...items],
+    async (formData: CheckoutFormData) => {
+      const order = await submitOrder({
+        items,
         subtotal,
         shippingCost,
         paymentAdjustment: paymentAdjustmentAmount,
         total,
         customer: formData,
-        createdAt: new Date().toISOString(),
-      }
+      })
+
       setConfirmedOrder(order)
+      setItems([])
     },
     [items, subtotal, shippingCost, paymentAdjustmentAmount, total]
   )

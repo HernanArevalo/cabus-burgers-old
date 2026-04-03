@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { Product } from "@/lib/types"
-import { products } from "@/lib/mock-data"
+import { categories as mockCategories, products as mockProducts } from "@/lib/mock-data"
+import { fetchProducts } from "@/lib/api"
 import { HeroSection } from "@/components/hero-section"
 import { CategoryNav } from "@/components/category-nav"
 import { ProductList } from "@/components/product-list"
@@ -11,7 +12,9 @@ import { CartSidebar } from "@/components/cart-sidebar"
 import { CartFloatingButton } from "@/components/cart-floating-button"
 
 export default function HomePage() {
-  const [activeCategory, setActiveCategory] = useState("Hamburguesas")
+  const [products, setProducts] = useState<Product[]>(mockProducts)
+  const [categories, setCategories] = useState<string[]>(mockCategories)
+  const [activeCategory, setActiveCategory] = useState(mockCategories[0] ?? "Hamburguesas")
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [isProductDetailOpen, setIsProductDetailOpen] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
@@ -26,6 +29,25 @@ export default function HomePage() {
     setIsProductDetailOpen(true)
   }
 
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const data = await fetchProducts()
+        setProducts(data.products)
+        setCategories(data.categories)
+        if (!data.categories.includes(activeCategory)) {
+          setActiveCategory(data.categories[0] ?? "Hamburguesas")
+        }
+      } catch {
+        setProducts(mockProducts)
+        setCategories(mockCategories)
+      }
+    }
+
+    void loadProducts()
+  }, [])
+
   return (
     <main className="min-h-screen bg-background pb-24">
       {/* Hero */}
@@ -34,6 +56,7 @@ export default function HomePage() {
       {/* Menu section */}
       <div ref={menuRef}>
         <CategoryNav
+          categories={categories}
           activeCategory={activeCategory}
           onCategoryChange={setActiveCategory}
         />
